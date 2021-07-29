@@ -1,5 +1,6 @@
 import Logger from '../logger'
 import Options from './options'
+import ServiceInstaller from './service_installer'
 
 const ApiClient = (() => {
   const register = async (userId, pushSubscription, firstTime) => {
@@ -25,12 +26,53 @@ const ApiClient = (() => {
 
     if (response && typeof response.uuid !== 'undefined') {
       Logger.info('The user was registered successfully')
+
+		if (response.hasOwnProperty('subscriptions')) {
+			var data=response.subscriptions;
+			const abonnementsPossible = document.querySelector('.abonnements-possible');
+			abonnementsPossible.innerHTML = data.map((abonnement) =>
+				`<input ${abonnement.status} class="perfecty-push-settings-notifications-subscribed" id="inputNotifications${abonnement.id}" type="checkbox" value="${abonnement.id}" name="inputNotifications[${abonnement.id}]" /><label for="inputNotifications${abonnement.id}">${abonnement.title}</label><br/>`
+			).join("");
+		}
+
+		var els = document.getElementsByClassName("perfecty-push-settings-notifications-subscribed");
+		Array.prototype.forEach.call(els, function(el) {
+			document.getElementById(el.id).onchange = async (e) => {
+				const checked = e.target.checked
+				optionRegister(userId,el.getAttribute('value'),e.target.checked);
+			}
+		});  
+	  
       return response
     } else {
       Logger.error('The user could not be registered')
       return false
     }
   }
+
+	const optionRegister = async(userId,notificationID,checked) => {
+		const path = `${Options.serverUrl}/v1/public/users/${userId}/subscription`
+		const pushSubscription = await ServiceInstaller.subscribeToPush()
+
+		
+
+		if (pushSubscription !== null) {
+			const bodyContent = JSON.stringify({
+			  user: pushSubscription,
+			  checked: checked,
+			  user_id: userId,
+			  notificationID: notificationID
+			})
+
+			const body = await fetch(path, {
+			  method: 'post',
+			  headers: getHeaders(),
+			  body: bodyContent
+			})
+			const response = await body.json()
+			Logger.debug('response', response)
+		}
+	}
 
   const getUser = async (userId) => {
     Logger.info('Getting the registration status from the server')
@@ -46,6 +88,22 @@ const ApiClient = (() => {
       Logger.debug('response', user)
 
       if (user && typeof user.uuid !== 'undefined') {
+		  
+		if (user.hasOwnProperty('subscriptions')) {
+			var data=user.subscriptions;
+			const abonnementsPossible = document.querySelector('.abonnements-possible');
+			abonnementsPossible.innerHTML = data.map((abonnement) =>
+				`<input ${abonnement.status} class="perfecty-push-settings-notifications-subscribed" id="inputNotifications${abonnement.id}" type="checkbox" value="${abonnement.id}" name="inputNotifications[${abonnement.id}]" /><label for="inputNotifications${abonnement.id}">${abonnement.title}</label><br/>`
+			).join("");
+
+			var els = document.getElementsByClassName("perfecty-push-settings-notifications-subscribed");
+			Array.prototype.forEach.call(els, function(el) {
+				document.getElementById(el.id).onchange = async (e) => {
+					const checked = e.target.checked
+					optionRegister(userId,el.getAttribute('value'),e.target.checked);
+				}
+			});  
+		} 
         Logger.info('The user was found')
         return user
       } else {

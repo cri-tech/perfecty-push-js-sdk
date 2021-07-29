@@ -11,15 +11,20 @@ const ServiceWorker = (() => {
     try {
       const data = await getContent(event)
       const title = data.title
-      const options = {
+      var options = {
         icon: data.icon,
         body: data.body,
         image: data.image,
         requireInteraction: data.require_interaction,
         data: {
-          url: data.extra.url_to_open
+          url: data.extra.url_to_open,
+		  notification: data.extra.notification
         }
       }
+		if(data.extra.actions){
+			// options['actions']=JSON.parse(data.extra.actions);
+			options['actions']=data.extra.actions;
+		}
 
       await self.registration.showNotification(title, options)
     } catch (err) {
@@ -32,7 +37,11 @@ const ServiceWorker = (() => {
    * @param event
    */
   const openWindow = (event) => {
-    event.notification.close()
+    if (!event.action) {
+		//-- send event.action and data.extra.notification  (ID of the notification) and endpoint to insert the answer in the database 
+	}
+	
+	event.notification.close()
 
     const url = event.notification.data.url
     self.clients.openWindow(url)

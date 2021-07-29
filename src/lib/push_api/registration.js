@@ -28,6 +28,7 @@ const Registration = (() => {
       Logger.info('Sending user registration')
       const response = await ApiClient.register(userId, pushSubscription, firstTime)
       if (response !== false) {
+
         Storage.setUserId(response.uuid)
         Storage.setShouldRegisterUser(false)
 
